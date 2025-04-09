@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Button Test</title>
+    <style>
+        .hidden { display: none; }
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        button { padding: 10px; background: #00aaff; color: white; border: none; cursor: pointer; }
+        section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <h1>Button Test</h1>
+    
+    <button id="showFormBtn">Show Form</button>
+    <button id="showListBtn">Show List</button>
+    
+    <section id="formSection" class="hidden">
+        <h2>Form Section</h2>
+        <p>This is the form that should appear when you click "Show Form"</p>
+    </section>
+    
+    <section id="listSection">
+        <h2>List Section</h2>
+        <p>This is the list that should be visible by default</p>
+    </section>
+    
+    <script>
+        // Simple direct script
+        document.getElementById('showFormBtn').onclick = function() {
+            document.getElementById('formSection').classList.remove('hidden');
+            document.getElementById('listSection').classList.add('hidden');
+            alert('Form button clicked!');
+        };
+        
+        document.getElementById('showListBtn').onclick = function() {
+            document.getElementById('formSection').classList.add('hidden');
+            document.getElementById('listSection').classList.remove('hidden');
+            alert('List button clicked!');
+        };
+    </script>
+</body>
+</html>
