@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Tracker - Simplified Version</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .hidden { display: none !important; }
+        header { background: #222; color: white; padding: 20px; text-align: center; margin-bottom: 20px; }
+        h1 { color: #00aaff; margin: 0; }
+        button { padding: 10px 15px; margin: 5px; background: #00aaff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        section { background: white; padding: 20px; border-radius: 4px; margin-bottom: 20px; }
+        form { display: grid; gap: 15px; }
+        label { font-weight: bold; }
+        input, select, textarea { padding: 10px; border: 1px solid #ddd; border-radius: 4px; width: 100%; }
+        .card { background: white; padding: 15px; margin: 10px 0; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Job Tracker (Simplified Version)</h1>
+    </header>
+
+    <div>
+        <button id="addButton" onclick="showForm()">Add New Application</button>
+        <button onclick="showList()">View Applications</button>
+    </div>
+
+    <section id="formSection" class="hidden">
+        <h2>Add New Application</h2>
+        <form id="jobForm">
+            <div>
+                <label for="jobTitle">Job Title:</label>
+                <input type="text" id="jobTitle" required>
+            </div>
+            <div>
+                <label for="employer">Employer:</label>
+                <input type="text" id="employer" required>
+            </div>
+            <div>
+                <label for="status">Status:</label>
+                <select id="status">
+                    <option>Interested</option>
+                    <option>Applied</option>
+                    <option>Interview</option>
+                    <option>Offered</option>
+                    <option>Rejected</option>
+                </select>
+            </div>
+            <div>
+                <label for="notes">Notes:</label>
+                <textarea id="notes" rows="4"></textarea>
+            </div>
+            <div>
+                <button type="submit">Save</button>
+                <button type="button" onclick="showList()">Cancel</button>
+            </div>
+        </form>
+    </section>
+
+    <section id="listSection">
+        <h2>Your Applications</h2>
+        <div id="applicationsList">
+            <!-- Application cards will be added here -->
+        </div>
+    </section>
+
+    <script>
+        // Simple global variables
+        var applications = JSON.parse(localStorage.getItem('simpleApps') || '[]');
+        
+        // Initial setup
+        window.onload = function() {
+            displayApplications();
+            document.getElementById('jobForm').onsubmit = saveApplication;
+        }
+        
+        // Show/hide sections
+        function showForm() {
+            document.getElementById('formSection').classList.remove('hidden');
+            document.getElementById('listSection').classList.add('hidden');
+        }
+        
+        function showList() {
+            document.getElementById('formSection').classList.add('hidden');
+            document.getElementById('listSection').classList.remove('hidden');
+            displayApplications();
+        }
+        
+        // Save new application
+        function saveApplication(e) {
+            e.preventDefault();
+            
+            var newApp = {
+                id: Date.now(),
+                title: document.getElementById('jobTitle').value,
+                employer: document.getElementById('employer').value,
+                status: document.getElementById('status').value,
+                notes: document.getElementById('notes').value
+            };
+            
+            applications.push(newApp);
+            localStorage.setItem('simpleApps', JSON.stringify(applications));
+            
+            document.getElementById('jobForm').reset();
+            showList();
+        }
+        
+        // Display all applications
+        function displayApplications() {
+            var listContainer = document.getElementById('applicationsList');
+            listContainer.innerHTML = '';
+            
+            if (applications.length === 0) {
+                listContainer.innerHTML = '<p>No applications yet. Click "Add New Application" to get started.</p>';
+                return;
+            }
+            
+            for (var i = 0; i < applications.length; i++) {
+                var app = applications[i];
+                var card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = '<h3>' + app.title + '</h3>' +
+                    '<p><strong>Employer:</strong> ' + app.employer + '</p>' +
+                    '<p><strong>Status:</strong> ' + app.status + '</p>' +
+                    (app.notes ? '<p><strong>Notes:</strong> ' + app.notes + '</p>' : '');
+                
+                // Add delete button
+                var deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.setAttribute('data-id', app.id);
+                deleteBtn.onclick = function() {
+                    deleteApplication(this.getAttribute('data-id'));
+                };
+                card.appendChild(deleteBtn);
+                
+                listContainer.appendChild(card);
+            }
+        }
+        
+        // Delete an application
+        function deleteApplication(id) {
+            id = parseInt(id);
+            applications = applications.filter(function(app) {
+                return app.id !== id;
+            });
+            localStorage.setItem('simpleApps', JSON.stringify(applications));
+            displayApplications();
+        }
+    </script>
+</body>
+</html>
