@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Application Tracker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        /* Base styles and variables */
+        :root {
+            --neon-blue: #00aaff;
+            --neon-blue-dark: #0088cc;
+            --neon-blue-light: #80d4ff;
+            --neon-blue-glow: 0 0 10px rgba(0, 170, 255, 0.5);
+            --dark-bg: #222;
+            --light-bg: #f5f5f5;
+            --text-dark: #333;
+            --text-light: #f8f8f8;
+            --border-radius: 4px;
+            --border-color: #ddd;
+            --error-color: #ff4d4d;
+            --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Reset and global styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-main);
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--light-bg);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Header styles */
+        header {
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+            padding: 1rem 2rem;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        header h1 {
+            font-size: 2rem;
+            color: var(--neon-blue);
+            text-shadow: var(--neon-blue-glow);
+            letter-spacing: 1px;
+        }
+
+        /* Navigation styles */
+        nav {
+            background-color: var(--dark-bg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 2rem;
+            border-bottom: 3px solid var(--neon-blue);
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            color: var(--text-light);
+        }
+
+        /* Main content area */
+        main {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Form styles */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--neon-blue);
+            box-shadow: var(--neon-blue-glow);
+        }
+
+        /* Button styles */
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background-color: #fff;
+            color: var(--text-dark);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: #f0f0f0;
+        }
+
+        .btn-primary {
+            background-color: var(--neon-blue);
+            color: var(--text-light);
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--neon-blue-dark);
+        }
+
+        .btn-danger {
+            background-color: var(--error-color);
+            color: var(--text-light);
+            border: none;
+        }
+
+        .btn-danger:hover {
+            background-color: #ff3333;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        /* Filter controls */
+        .filter-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background-color: #fff;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .date-filter {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .date-filter input[type="date"] {
+            width: auto;
+        }
+
+        /* Applications list */
+        #applicationsList {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .application-card {
+            background-color: #fff;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .application-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .application-card h3 {
+            color: var(--neon-blue);
+            margin-bottom: 0.5rem;
+            font-size: 1.25rem;
+        }
+
+        .application-tag {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+        }
+
+        .workplace-tag {
+            background-color: var(--neon-blue-light);
+            color: var(--dark-bg);
+        }
+
+        .personal-tag {
+            background-color: #d4d4d4;
+            color: var(--text-dark);
+        }
+
+        .card-status {
+            display: inline-block;
+            margin-top: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--border-radius);
+            font-size: 0.875rem;
+            background-color: #f0f0f0;
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 3rem;
+            background-color: #fff;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Application details */
+        #applicationDetails {
+            background-color: #fff;
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .detail-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .detail-group h3 {
+            color: var(--neon-blue);
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.25rem;
+        }
+
+        .detail-content {
+            white-space: pre-wrap;
+        }
+
+        /* Modal styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal h3 {
+            color: var(--neon-blue);
+            margin-bottom: 1rem;
+        }
+
+        /* Footer styles */
+        footer {
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+            text-align: center;
+            padding: 1rem;
+            margin-top: auto;
+            font-size: 0.875rem;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            nav {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+            
+            .filter-controls {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            #applicationsList {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animation for the neon effect */
+        @keyframes neonGlow {
+            0% {
+                text-shadow: 0 0 5px rgba(0, 170, 255, 0.5);
+            }
+            50% {
+                text-shadow: 0 0 20px rgba(0, 170, 255, 0.8);
+            }
+            100% {
+                text-shadow: 0 0 5px rgba(0, 170, 255, 0.5);
+            }
+        }
+
+        header h1 {
+            animation: neonGlow 2s infinite;
+        }
+
+        /* Status colors */
+        .status-interested {
+            background-color: #e6f7ff;
+            border-left: 3px solid var(--neon-blue);
+        }
+
+        .status-applied {
+            background-color: #e6f7ff;
+            border-left: 3px solid #36a2eb;
+        }
+
+        .status-assessment {
+            background-color: #fff7e6;
+            border-left: 3px solid #ffcd56;
+        }
+
+        .status-interview-invite {
+            background-color: #f2e6ff;
+            border-left: 3px solid #9966ff;
+        }
+
+        .status-interview-completed {
+            background-color: #e6fff2;
+            border-left: 3px solid #4bc0c0;
+        }
+
+        .status-accepted {
+            background-color: #e6ffe6;
+            border-left: 3px solid #97e897;
+        }
+
+        .status-rejected {
+            background-color: #ffe6e6;
+            border-left: 3px solid #ff6384;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Job Application Tracker</h1>
+    </header>
+
+    <nav>
+        <button id="addNewBtn" class="btn">Add New Application</button>
+        <button id="viewAllBtn" class="btn">View All Applications</button>
+        <div class="toggle-container">
+            <label for="applicationTypeToggle">Show: </label>
+            <select id="applicationTypeToggle">
+                <option value="all">All Applications</option>
+                <option value="workplace">Workplace Redeployment Only</option>
+                <option value="personal">Personal Applications Only</option>
+            </select>
+        </div>
+    </nav>
+
+    <main>
+        <section id="formSection" class="hidden">
+            <h2 id="formTitle">Add New Application</h2>
+            <form id="applicationForm">
+                <input type="hidden" id="applicationId">
+                
+                <div class="form-group">
+                    <label for="isWorkplace">Application Type:</label>
+                    <select id="isWorkplace" required>
+                        <option value="workplace">Workplace Redeployment</option>
+                        <option value="personal">Personal Job Search</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="vacancyNumber">Vacancy Number:</label>
+                    <input type="text" id="vacancyNumber" placeholder="e.g. JOB12345" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="jobTitle">Job Title:</label>
+                    <input type="text" id="jobTitle" placeholder="Enter job title" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="employer">Employer:</label>
+                    <input type="text" id="employer" placeholder="Enter employer name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="salary">Salary:</label>
+                    <input type="text" id="salary" placeholder="e.g. £25,000 - £30,000 per annum">
+                </div>
+
+                <div class="form-group">
+                    <label for="jobDescription">Job Description:</label>
+                    <textarea id="jobDescription" rows="4" placeholder="Enter job description"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="closingDate">Closing Date:</label>
+                    <input type="date" id="closingDate">
+                </div>
+
+                <div class="form-group">
+                    <label for="status">Status:</label>
+                    <select id="status" required>
+                        <option value="Interested">Interested</option>
+                        <option value="Applied">Applied</option>
+                        <option value="Assessment">Assessment</option>
+                        <option value="Interview Invite">Interview Invite</option>
+                        <option value="Interview Completed">Interview Completed</option>
+                        <option value="Accepted">Accepted</option>
+                        <option value="Rejected">Rejected</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="statusDate">Status Date:</label>
+                    <input type="date" id="statusDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="assessmentDateTime">Assessment Date/Time:</label>
+                    <input type="datetime-local" id="assessmentDateTime">
+                </div>
+
+                <div class="form-group">
+                    <label for="interviewDateTime">Interview Date/Time:</label>
+                    <input type="datetime-local" id="interviewDateTime">
+                </div>
+
+                <div class="form-group">
+                    <label for="customCV">Custom CV:</label>
+                    <textarea id="customCV" rows="4" placeholder="Paste custom CV content here if applicable"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="notes">Notes:</label>
+                    <textarea id="notes" rows="4" placeholder="Add any additional notes here"></textarea>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">Save Application</button>
+                    <button type="button" id="cancelBtn" class="btn">Cancel</button>
+                </div>
+            </form>
+        </section>
+
+        <section id="listSection">
+            <div class="filter-controls">
+                <div class="date-filter">
+                    <label for="startDate">From:</label>
+                    <input type="date" id="startDate">
+                    <label for="endDate">To:</label>
+                    <input type="date" id="endDate">
+                    <button id="applyFilterBtn" class="btn">Apply Filter</button>
+                    <button id="clearFilterBtn" class="btn">Clear Filter</button>
+                </div>
+                <div class="export-control">
+                    <button id="exportBtn" class="btn btn-primary">Export Workplace Applications</button>
+                </div>
+            </div>
+
+            <div id="applicationsList">
+                <!-- Applications will be displayed here -->
+                <div class="empty-state">
+                    <p>No applications found. Click "Add New Application" to get started.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="detailsSection" class="hidden">
+            <h2>Application Details</h2>
+            <div id="applicationDetails">
+                <!-- Application details will be displayed here -->
+            </div>
+            <div class="button-group">
+                <button id="editBtn" class="btn btn-primary">Edit</button>
+                <button id="deleteBtn" class="btn btn-danger">Delete</button>
+                <button id="backBtn" class="btn">Back to List</button>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Job Application Tracker &copy; 2025 | All data is stored locally on your device</p>
+    </footer>
+
+    <div id="confirmationModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Confirm Deletion</h3>
+            <p>Are you sure you want to delete this application? This action cannot be undone.</p>
+            <div class="button-group">
+                <button id="confirmDeleteBtn" class="btn btn-danger">Delete</button>
+                <button id="cancelDeleteBtn" class="btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Job Application Tracker - Main JavaScript with simplified direct event binding
+        // Wait for the DOM to be fully loaded
+        window.onload = function() {
+            // DOM Elements
+            const addNewBtn = document.getElementById('addNewBtn');
+            const viewAllBtn = document.getElementById('viewAllBtn');
+            const applicationTypeToggle = document.getElementById('applicationTypeToggle');
+            const formSection = document.getElementById('formSection');
+            const listSection = document.getElementById('listSection');
+            const detailsSection = document.getElementById('detailsSection');
+            const applicationForm = document.getElementById('applicationForm');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const applicationsList = document.getElementById('applicationsList');
+            const applicationDetails = document.getElementById('applicationDetails');
+            const editBtn = document.getElementById('editBtn');
+            const deleteBtn = document.getElementById('deleteBtn');
+            const backBtn = document.getElementById('backBtn');
+            const confirmationModal = document.getElementById('confirmationModal');
+            const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+            const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            const applyFilterBtn = document.getElementById('applyFilterBtn');
+            const clearFilterBtn = document.getElementById('clearFilterBtn');
+            const formTitle = document.getElementById('formTitle');
+
+            // Application state
+            let applications = JSON.parse(localStorage.getItem('applications')) || [];
+            let currentApplicationId = null;
+            let activeFilters = {
+                type: 'all',
+                startDate: null,
+                endDate: null
+            };
+
+            // Initialize the application
+            init();
+
+            // Direct event binding
+            addNewBtn.onclick = showAddForm;
+            viewAllBtn.onclick = showListView;
+            applicationForm.onsubmit = saveApplication;
+            cancelBtn.onclick = cancelForm;
+            applicationTypeToggle.onchange = filterApplicationsByType;
+            editBtn.onclick = editCurrentApplication;
+            deleteBtn.onclick = showDeleteConfirmation;
+            backBtn.onclick = showListView;
+            confirmDeleteBtn.onclick = deleteApplication;
+            cancelDeleteBtn.onclick = hideDeleteConfirmation;
+            exportBtn.onclick = exportWorkplaceApplications;
+            applyFilterBtn.onclick = applyDateFilter;
+            clearFilterBtn.onclick = clearDateFilter;
+
+            // Set today's date as default for status date
+            document.getElementById('statusDate').valueAsDate = new Date();
+
+            function init() {
+                renderApplicationsList();
+                setDefaultDates();
+            }
+
+            function setDefaultDates() {
+                // Set default date range (last month to today)
+                const today = new Date();
+                const lastMonth = new Date();
+                lastMonth.setMonth(lastMonth.getMonth() - 1);
+                
+                startDateInput.valueAsDate = lastMonth;
+                endDateInput.valueAsDate = today;
+            }
+
+            function showAddForm() {
+                formTitle.textContent = 'Add New Application';
+                currentApplicationId = null;
+                applicationForm.reset();
+                document.getElementById('statusDate').valueAsDate = new Date();
+                
+                formSection.classList.remove('hidden');
+                listSection.classList.add('hidden');
+                detailsSection.classList.add('hidden');
+            }
+
+            function showEditForm() {
+                formTitle.textContent = 'Edit Application';
+                formSection.classList.remove('hidden');
+                listSection.classList.add('hidden');
+                detailsSection.classList.add('hidden');
+            }
+
+            function showListView() {
+                formSection.classList.add('hidden');
+                listSection.classList.remove('hidden');
+                detailsSection.classList.add('hidden');
+                renderApplicationsList();
+            }
+
+            function showDetailsView(id) {
+                currentApplicationId = id;
+                const application = applications.find(app => app.id === id);
+                
+                if (!application) {
+                    alert('Application not found!');
+                    showListView();
+                    return;
+                }
+                
+                renderApplicationDetails(application);
+                
+                formSection.classList.add('hidden');
+                listSection.classList.add('hidden');
+                detailsSection.classList.remove('hidden');
+            }
+
+            function saveApplication(e) {
+                e.preventDefault();
+                
+                const application = {
+                    id: currentApplicationId || generateId(),
+                    isWorkplace: document.getElementById('isWorkplace').value,
+                    vacancyNumber: document.getElementById('vacancyNumber').value,
+                    jobTitle: document.getElementById('jobTitle').value,
+                    employer: document.getElementById('employer').value,
+                    salary: document.getElementById('salary').value,
+                    jobDescription: document.getElementById('jobDescription').value,
+                    closingDate: document.getElementById('closingDate').value,
+                    status: document.getElementById('status').value,
+                    statusDate: document.getElementById('statusDate').value,
+                    assessmentDateTime: document.getElementById('assessmentDateTime').value,
+                    interviewDateTime: document.getElementById('interviewDateTime').value,
+                    customCV: document.getElementById('customCV').value,
+                    notes: document.getElementById('notes').value,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+
+                if (currentApplicationId) {
+                    // Edit existing application
+                    const index = applications.findIndex(app => app.id === currentApplicationId);
+                    if (index !== -1) {
+                        application.createdAt = applications[index].createdAt;
+                        applications[index] = application;
+                    }
+                } else {
+                    // Add new application
+                    applications.push(application);
+                }
+                
+                // Save to localStorage
+                saveToLocalStorage();
+                
+                // Show the updated list
+                showListView();
+            }
+
+            function cancelForm() {
+                applicationForm.reset();
+                showListView();
+            }
+
+            function renderApplicationsList() {
+                // Clear current list
+                applicationsList.innerHTML = '';
+                
+                // Get filtered applications
+                const filteredApplications = getFilteredApplications();
+                
+                if (filteredApplications.length === 0) {
+                    applicationsList.innerHTML = `
+                        <div class="empty-state">
+                            <p>No applications found. ${activeFilters.type !== 'all' || activeFilters.startDate || activeFilters.endDate ? 'Try changing your filters or ' : ''}Click "Add New Application" to get started.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Sort applications by updated date (newest first)
+                filteredApplications.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+                
+                // Render each application card
+                filteredApplications.forEach(application => {
+                    const card = document.createElement('div');
+                    card.className = `application-card status-${application.status.toLowerCase().replace(/ /g, '-')}`;
+                    card.dataset.id = application.id;
+                    
+                    // Format the status date
+                    const statusDate = application.statusDate ? new Date(application.statusDate).toLocaleDateString('en-GB') : 'N/A';
+                    
+                    card.innerHTML = `
+                        <div class="application-tag ${application.isWorkplace === 'workplace' ? 'workplace-tag' : 'personal-tag'}">
+                            ${application.isWorkplace === 'workplace' ? 'Workplace' : 'Personal'}
+                        </div>
+                        <h3>${application.jobTitle}</h3>
+                        <p><strong>Employer:</strong> ${application.employer}</p>
+                        <p><strong>Vacancy #:</strong> ${application.vacancyNumber}</p>
+                        <p class="card-status">${application.status} (${statusDate})</p>
+                    `;
+                    
+                    // Direct click handler instead of addEventListener
+                    card.onclick = function() {
+                        showDetailsView(application.id);
+                    };
+                    
+                    applicationsList.appendChild(card);
+                });
+            }
+
+            function renderApplicationDetails(application) {
+                applicationDetails.innerHTML = '';
+                
+                // Format dates for display
+                const formattedClosingDate = application.closingDate ? new Date(application.closingDate).toLocaleDateString('en-GB') : 'N/A';
+                const formattedStatusDate = application.statusDate ? new Date(application.statusDate).toLocaleDateString('en-GB') : 'N/A';
+                
+                // Format assessment date/time
+                let formattedAssessmentDateTime = 'N/A';
+                if (application.assessmentDateTime) {
+                    const date = new Date(application.assessmentDateTime);
+                    formattedAssessmentDateTime = `${date.toLocaleDateString('en-GB')} at ${date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+                }
+                
+                // Format interview date/time
+                let formattedInterviewDateTime = 'N/A';
+                if (application.interviewDateTime) {
+                    const date = new Date(application.interviewDateTime);
+                    formattedInterviewDateTime = `${date.toLocaleDateString('en-GB')} at ${date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+                }
+
+                applicationDetails.innerHTML = `
+                    <div class="application-tag ${application.isWorkplace === 'workplace' ? 'workplace-tag' : 'personal-tag'}" style="position: static; display: inline-block; margin-bottom: 1rem;">
+                        ${application.isWorkplace === 'workplace' ? 'Workplace Redeployment' : 'Personal Job Search'}
+                    </div>
+                    
+                    <div class="detail-group">
+                        <h3>Basic Information</h3>
+                        <p><strong>Job Title:</strong> ${application.jobTitle}</p>
+                        <p><strong>Vacancy Number:</strong> ${application.vacancyNumber}</p>
+                        <p><strong>Employer:</strong> ${application.employer}</p>
+                        <p><strong>Salary:</strong> ${application.salary || 'Not specified'}</p>
+                    </div>
+                    
+                    <div class="detail-group">
+                        <h3>Job Description</h3>
+                        <div class="detail-content">${application.jobDescription || 'No description provided'}</div>
+                    </div>
+                    
+                    <div class="detail-group">
+                        <h3>Status Information</h3>
+                        <p><strong>Current Status:</strong> ${application.status}</p>
+                        <p><strong>Status Date:</strong> ${formattedStatusDate}</p>
+                        <p><strong>Closing Date:</strong> ${formattedClosingDate}</p>
+                    </div>
+                    
+                    <div class="detail-group">
+                        <h3>Important Dates</h3>
+                        <p><strong>Assessment Date/Time:</strong> ${formattedAssessmentDateTime}</p>
+                        <p><strong>Interview Date/Time:</strong> ${formattedInterviewDateTime}</p>
+                    </div>
+                    
+                    ${application.customCV ? `
+                    <div class="detail-group">
+                        <h3>Custom CV</h3>
+                        <div class="detail-content">${application.customCV}</div>
+                    </div>
+                    ` : ''}
+                    
+                    ${application.notes ? `
+                    <div class="detail-group">
+                        <h3>Notes</h3>
+                        <div class="detail-content">${application.notes}</div>
+                    </div>
+                    ` : ''}
+                `;
+            }
+
+            function editCurrentApplication() {
+                const application = applications.find(app => app.id === currentApplicationId);
+                
+                if (!application) {
+                    alert('Application not found!');
+                    return;
+                }
+                
+                // Populate the form with current values
+                document.getElementById('applicationId').value = application.id;
+                document.getElementById('isWorkplace').value = application.isWorkplace;
+                document.getElementById('vacancyNumber').value = application.vacancyNumber;
+                document.getElementById('jobTitle').value = application.jobTitle;
+                document.getElementById('employer').value = application.employer;
+                document.getElementById('salary').value = application.salary;
+                document.getElementById('jobDescription').value = application.jobDescription;
+                document.getElementById('closingDate').value = application.closingDate;
+                document.getElementById('status').value = application.status;
+                document.getElementById('statusDate').value = application.statusDate;
+                document.getElementById('assessmentDateTime').value = application.assessmentDateTime;
+                document.getElementById('interviewDateTime').value = application.interviewDateTime;
+                document.getElementById('customCV').value = application.customCV;
+                document.getElementById('notes').value = application.notes;
+                
+                showEditForm();
+            }
+
+            function showDeleteConfirmation() {
+                confirmationModal.classList.remove('hidden');
+            }
+
+            function
+function hideDeleteConfirmation() {
+                confirmationModal.classList.add('hidden');
+            }
+
+            function deleteApplication() {
+                applications = applications.filter(app => app.id !== currentApplicationId);
+                saveToLocalStorage();
+                hideDeleteConfirmation();
+                showListView();
+            }
+
+            function getFilteredApplications() {
+                return applications.filter(app => {
+                    // Filter by type
+                    if (activeFilters.type === 'workplace' && app.isWorkplace !== 'workplace') {
+                        return false;
+                    }
+                    if (activeFilters.type === 'personal' && app.isWorkplace !== 'personal') {
+                        return false;
+                    }
+                    
+                    // Filter by date range
+                    if (activeFilters.startDate || activeFilters.endDate) {
+                        const appDate = new Date(app.statusDate);
+                        
+                        if (activeFilters.startDate && appDate < activeFilters.startDate) {
+                            return false;
+                        }
+                        
+                        if (activeFilters.endDate) {
+                            const endDatePlus1 = new Date(activeFilters.endDate);
+                            endDatePlus1.setDate(endDatePlus1.getDate() + 1);
+                            
+                            if (appDate >= endDatePlus1) {
+                                return false;
+                            }
+                        }
+                    }
+                    
+                    return true;
+                });
+            }
+
+            function filterApplicationsByType() {
+                activeFilters.type = applicationTypeToggle.value;
+                renderApplicationsList();
+            }
+
+            function applyDateFilter() {
+                activeFilters.startDate = startDateInput.value ? new Date(startDateInput.value) : null;
+                activeFilters.endDate = endDateInput.value ? new Date(endDateInput.value) : null;
+                renderApplicationsList();
+            }
+
+            function clearDateFilter() {
+                startDateInput.value = '';
+                endDateInput.value = '';
+                activeFilters.startDate = null;
+                activeFilters.endDate = null;
+                renderApplicationsList();
+            }
+
+            function exportWorkplaceApplications() {
+                // Filter only workplace applications within the date range
+                const workplaceApplications = applications.filter(app => {
+                    if (app.isWorkplace !== 'workplace') {
+                        return false;
+                    }
+                    
+                    // Apply date filters if set
+                    if (activeFilters.startDate || activeFilters.endDate) {
+                        const appDate = new Date(app.statusDate);
+                        
+                        if (activeFilters.startDate && appDate < activeFilters.startDate) {
+                            return false;
+                        }
+                        
+                        if (activeFilters.endDate) {
+                            const endDatePlus1 = new Date(activeFilters.endDate);
+                            endDatePlus1.setDate(endDatePlus1.getDate() + 1);
+                            
+                            if (appDate >= endDatePlus1) {
+                                return false;
+                            }
+                        }
+                    }
+                    
+                    return true;
+                });
+                
+                if (workplaceApplications.length === 0) {
+                    alert('No workplace applications found for the selected date range.');
+                    return;
+                }
+                
+                // Create a worksheet from the filtered data
+                const worksheet = XLSX.utils.json_to_sheet(workplaceApplications.map(app => {
+                    // Format dates for Excel
+                    const formatDate = (dateString) => {
+                        return dateString ? new Date(dateString).toLocaleDateString('en-GB') : '';
+                    };
+                    
+                    const formatDateTime = (dateTimeString) => {
+                        if (!dateTimeString) return '';
+                        const date = new Date(dateTimeString);
+                        return `${date.toLocaleDateString('en-GB')} ${date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+                    };
+                    
+                    return {
+                        'Vacancy Number': app.vacancyNumber,
+                        'Job Title': app.jobTitle,
+                        'Employer': app.employer,
+                        'Salary': app.salary,
+                        'Job Description': app.jobDescription,
+                        'Closing Date': formatDate(app.closingDate),
+                        'Status': app.status,
+                        'Status Date': formatDate(app.statusDate),
+                        'Assessment Date/Time': formatDateTime(app.assessmentDateTime),
+                        'Interview Date/Time': formatDateTime(app.interviewDateTime),
+                        'Notes': app.notes
+                    };
+                }));
+                
+                // Set column widths
+                const wscols = [
+                    {wch: 15}, // Vacancy Number
+                    {wch: 30}, // Job Title
+                    {wch: 25}, // Employer
+                    {wch: 15}, // Salary
+                    {wch: 50}, // Job Description
+                    {wch: 15}, // Closing Date
+                    {wch: 20}, // Status
+                    {wch: 15}, // Status Date
+                    {wch: 25}, // Assessment Date/Time
+                    {wch: 25}, // Interview Date/Time
+                    {wch: 50}  // Notes
+                ];
+                worksheet['!cols'] = wscols;
+                
+                // Create a workbook with the worksheet
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, 'Workplace Applications');
+                
+                // Generate filename with date range
+                let filename = 'Workplace_Applications';
+                if (activeFilters.startDate && activeFilters.endDate) {
+                    const startStr = activeFilters.startDate.toISOString().split('T')[0];
+                    const endStr = activeFilters.endDate.toISOString().split('T')[0];
+                    filename += `_${startStr}_to_${endStr}`;
+                }
+                filename += '.xlsx';
+                
+                // Export to XLSX file
+                XLSX.writeFile(workbook, filename);
+            }
+
+            function saveToLocalStorage() {
+                localStorage.setItem('applications', JSON.stringify(applications));
+            }
+
+            function generateId() {
+                return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+            }
+        };
+    </script>
+</body>
+</html>
